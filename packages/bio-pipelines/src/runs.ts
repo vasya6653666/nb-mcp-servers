@@ -3,13 +3,16 @@
 // и хвост лога, план и применение остановки (SIGTERM), список прогонов. Регистрация в MCP — `server.ts`.
 import { spawn } from 'node:child_process';
 import { closeSync, openSync, promises as fs } from 'node:fs';
-import { IHandlerContext, programOf } from './context.js';
+import { setTimeout as delay } from 'node:timers/promises';
+import { IExit, IHandlerContext, programOf } from './context.js';
 import { inferOutcome, nextflowProgress, snakemakeProgress } from './parse.js';
 import { changedFiles, existingPath, hashFiles } from './paths.js';
 import { programEnv } from './runner.js';
 import { dropPlan, dropStaleRuns, IRunPlan, IRunRecord, IStopPlan, listRuns, loadPlan, loadRun, newId, runPaths, saveRun, savePlan, updateRun } from './store.js';
 const TAIL_LINES = 100;
 const TAIL_BYTES = 256 * 1024;
+/** Сколько ждать события `exit` у своего прогона, который уже не жив. */
+const EXIT_WAIT_MS = 3000;
 /** Процесс жив; на Linux заодно проверяется, что PID не занят чужим процессом (в командной строке — файл пайплайна). */
 export async function isAlive(record: IRunRecord): Promise<boolean> {
 	try {
@@ -23,15 +26,36 @@ export async function isAlive(record: IRunRecord): Promise<boolean> {
 	return cmdline === undefined || cmdline.includes(record.pipeline);
 }
 type State = { running: boolean; text: string };
+function exitText(exit: IExit): State {
+	const how = exit.code === 0 ? 'succeeded (exit code 0)' : exit.code !== null ? `failed (exit code ${exit.code})` : `stopped by signal ${exit.signal ?? 'unknown'}`;
+	return { running: false, text: `${how}, finished ${exit.at}` };
+}
+/** Исход своего прогона, если событие `exit` придёт за `EXIT_WAIT_MS`. */
+async function awaitExit(ctx: IHandlerContext, id: string): Promise<IExit | undefined> {
+	const pending = ctx.children.get(id);
+	if (!pending) {
+		return undefined;
+	}
+	const stop = new AbortController();
+	try {
+		return await Promise.race([pending, delay(EXIT_WAIT_MS, undefined, { signal: stop.signal }).catch(() => undefined)]);
+	} finally {
+		stop.abort();
+	}
+}
 /** Состояние прогона: сначала исход, известный этому процессу сервера, затем запись на диске, затем PID и лог. */
 async function stateOf(ctx: IHandlerContext, record: IRunRecord, log: string): Promise<State> {
 	const exit = ctx.exits.get(record.id) ?? (record.finishedAt ? { code: record.exitCode ?? null, signal: record.signal ?? null, at: record.finishedAt } : undefined);
 	if (exit) {
-		const how = exit.code === 0 ? 'succeeded (exit code 0)' : exit.code !== null ? `failed (exit code ${exit.code})` : `stopped by signal ${exit.signal ?? 'unknown'}`;
-		return { running: false, text: `${how}, finished ${exit.at}` };
+		return exitText(exit);
 	}
 	if (await isAlive(record)) {
 		return { running: true, text: `running (PID ${record.pid})${record.stopRequestedAt ? `, stop requested ${record.stopRequestedAt}` : ''}` };
+	}
+	// Свой прогон уже снят, а `exit` ещё не пришёл (сразу после SIGTERM или быстрого падения) — подождать его.
+	const late = await awaitExit(ctx, record.id);
+	if (late) {
+		return exitText(late);
 	}
 	const guess = inferOutcome(record.program, log);
 	return { running: false, text: `finished; exit code unknown (the server restarted during the run)${guess ? `, the log suggests it ${guess}` : ''}` };
@@ -90,9 +114,13 @@ export async function startRun(ctx: IHandlerContext, args: { planId: string }): 
 	});
 	// Обработчик выхода — сразу: короткий прогон может завершиться раньше, чем запись прогона ляжет на диск.
 	let saved = false;
+	let settle: (exit: IExit) => void = () => undefined;
+	ctx.children.set(plan.id, new Promise<IExit>(resolve => { settle = resolve; }));
 	child.on('exit', (code, signal) => {
 		const at = new Date().toISOString();
 		ctx.exits.set(plan.id, { code, signal, at });
+		ctx.children.delete(plan.id);
+		settle({ code, signal, at });
 		if (saved) {
 			void updateRun(plan.id, { finishedAt: at, exitCode: code, signal }, ctx.env).catch(() => undefined);
 		}
@@ -103,6 +131,7 @@ export async function startRun(ctx: IHandlerContext, args: { planId: string }): 
 			child.once('error', reject);
 		});
 	} catch (error) {
+		ctx.children.delete(plan.id);
 		throw new Error(`Could not start ${plan.binary}: ${(error as Error).message}`);
 	} finally {
 		closeSync(fd);

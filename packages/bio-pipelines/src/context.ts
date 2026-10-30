@@ -12,9 +12,11 @@ export interface IHandlerContext {
 	readonly programs: Partial<Record<ProgramKind, Promise<IProgram | undefined>>>;
 	/** Исход прогонов этого процесса сервера по id прогона. */
 	readonly exits: Map<string, IExit>;
+	/** Прогоны, запущенные этим процессом сервера: исход приходит событием `exit` чуть позже, чем процесс пропадает. */
+	readonly children: Map<string, Promise<IExit>>;
 }
 export function createContext(env: NodeJS.ProcessEnv): IHandlerContext {
-	return { env, programs: {}, exits: new Map() };
+	return { env, programs: {}, exits: new Map(), children: new Map() };
 }
 /** Программа или `undefined`; неудачный поиск не кэшируется — пользователь может поставить программу без перезапуска. */
 export async function findProgram(ctx: IHandlerContext, kind: ProgramKind): Promise<IProgram | undefined> {

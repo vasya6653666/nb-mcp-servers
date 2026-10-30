@@ -114,10 +114,20 @@ export async function runPaths(env: NodeJS.ProcessEnv, id: string): Promise<{ js
 	const dir = await runsDir(env);
 	return { json: join(dir, `${id}.json`), log: join(dir, `${id}.log`), report: join(dir, `${id}-report.html`) };
 }
+/** Запись прогона целиком: во временный файл и переименованием — читатель не увидит наполовину записанный файл. */
 export async function saveRun(record: IRunRecord, env: NodeJS.ProcessEnv): Promise<void> {
 	const { json } = await runPaths(env, record.id);
-	await fs.writeFile(json, JSON.stringify(record, null, 2), { encoding: 'utf8', mode: 0o600 });
+	const tmp = `${json}.${randomUUID()}.tmp`;
+	try {
+		await fs.writeFile(tmp, JSON.stringify(record, null, 2), { encoding: 'utf8', mode: 0o600 });
+		await fs.rename(tmp, json);
+	} catch (error) {
+		await fs.rm(tmp, { force: true });
+		throw error;
+	}
 }
+/** Правки одной записи по очереди: выход процесса и запрос остановки не затирают друг друга. */
+const updates = new Map<string, Promise<void>>();
 export async function loadRun(id: string, env: NodeJS.ProcessEnv): Promise<IRunRecord> {
 	if (!ID.test(id)) {
 		throw new Error(`Unknown run id "${id}".`);
@@ -130,10 +140,16 @@ export async function loadRun(id: string, env: NodeJS.ProcessEnv): Promise<IRunR
 	return JSON.parse(raw) as IRunRecord;
 }
 export async function updateRun(id: string, patch: Partial<IRunRecord>, env: NodeJS.ProcessEnv): Promise<void> {
-	const record = await loadRun(id, env).catch(() => undefined);
-	if (record) {
-		await saveRun({ ...record, ...patch }, env);
-	}
+	const next = (updates.get(id) ?? Promise.resolve()).then(async () => {
+		const record = await loadRun(id, env).catch(() => undefined);
+		if (record) {
+			await saveRun({ ...record, ...patch }, env);
+		}
+	});
+	const tail = next.catch(() => undefined);
+	updates.set(id, tail);
+	void tail.then(() => updates.get(id) === tail && updates.delete(id));
+	return next;
 }
 export async function listRuns(env: NodeJS.ProcessEnv): Promise<IRunRecord[]> {
 	const dir = await runsDir(env);
