@@ -1,0 +1,47 @@
+{
+  "name": "@neuralbridge/bio-pipelines-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for bioinformatics pipelines with Nextflow, miniwdl and Snakemake: detect, lint, dry-run plan, start a reviewed run in the background, follow and stop it.",
+  "license": "Apache-2.0",
+  "author": "NeuralBridge",
+  "homepage": "https://neuralbridge.ru",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vasya6653666/nb-mcp-servers.git",
+    "directory": "packages/bio-pipelines"
+  },
+  "keywords": [
+    "mcp",
+    "nextflow",
+    "snakemake",
+    "miniwdl",
+    "wdl",
+    "bioinformatics",
+    "neuralbridge"
+  ],
+  "type": "module",
+  "bin": {
+    "nb-bio-pipelines-mcp": "dist/src/index.js"
+  },
+  "files": [
+    "dist/src",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test \"dist/test/*.test.js\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "typescript": "7.0.2"
+  }
+}

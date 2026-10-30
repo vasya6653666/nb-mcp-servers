@@ -1,0 +1,46 @@
+{
+  "name": "@neuralbridge/llm-evals-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for promptfoo evaluations: find and validate configs, count model calls before a run, run a reviewed plan, summarize results.",
+  "license": "Apache-2.0",
+  "author": "NeuralBridge",
+  "homepage": "https://neuralbridge.ru",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vasya6653666/nb-mcp-servers.git",
+    "directory": "packages/llm-evals"
+  },
+  "keywords": [
+    "mcp",
+    "promptfoo",
+    "llm",
+    "evals",
+    "prompt-testing",
+    "neuralbridge"
+  ],
+  "type": "module",
+  "bin": {
+    "nb-llm-evals-mcp": "dist/src/index.js"
+  },
+  "files": [
+    "dist/src",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test \"dist/test/*.test.js\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "typescript": "7.0.2"
+  }
+}

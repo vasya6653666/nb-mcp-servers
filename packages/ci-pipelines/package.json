@@ -1,0 +1,48 @@
+{
+  "name": "@neuralbridge/ci-pipelines-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for CI pipelines: lint GitHub Actions workflows with actionlint, validate .gitlab-ci.yml with glab, list and dry-run workflow jobs locally with act, run a reviewed act plan.",
+  "license": "Apache-2.0",
+  "author": "NeuralBridge",
+  "homepage": "https://neuralbridge.ru",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vasya6653666/nb-mcp-servers.git",
+    "directory": "packages/ci-pipelines"
+  },
+  "keywords": [
+    "mcp",
+    "ci",
+    "github-actions",
+    "actionlint",
+    "act",
+    "gitlab-ci",
+    "glab",
+    "neuralbridge"
+  ],
+  "type": "module",
+  "bin": {
+    "nb-ci-pipelines-mcp": "dist/src/index.js"
+  },
+  "files": [
+    "dist/src",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test \"dist/test/*.test.js\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "typescript": "7.0.2"
+  }
+}

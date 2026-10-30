@@ -1,0 +1,49 @@
+{
+  "name": "@neuralbridge/code-modernization-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for modernizing Java and Kotlin code with OpenRewrite recipes through the project's Maven or Gradle build: discover recipes, dry-run them into a reviewable patch, apply exactly that patch with git.",
+  "license": "Apache-2.0",
+  "author": "NeuralBridge",
+  "homepage": "https://neuralbridge.ru",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vasya6653666/nb-mcp-servers.git",
+    "directory": "packages/code-modernization"
+  },
+  "keywords": [
+    "mcp",
+    "openrewrite",
+    "java",
+    "kotlin",
+    "maven",
+    "gradle",
+    "refactoring",
+    "migration",
+    "neuralbridge"
+  ],
+  "type": "module",
+  "bin": {
+    "nb-code-modernization-mcp": "dist/src/index.js"
+  },
+  "files": [
+    "dist/src",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test \"dist/test/*.test.js\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "typescript": "7.0.2"
+  }
+}

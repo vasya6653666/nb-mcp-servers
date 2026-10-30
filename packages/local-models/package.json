@@ -1,0 +1,49 @@
+{
+  "name": "@neuralbridge/local-models-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for models the user runs locally: list, inspect, query and embed with Ollama and llama.cpp llama-server over their HTTP APIs; download and delete Ollama models only through an approved plan.",
+  "license": "Apache-2.0",
+  "author": "NeuralBridge",
+  "homepage": "https://neuralbridge.ru",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vasya6653666/nb-mcp-servers.git",
+    "directory": "packages/local-models"
+  },
+  "keywords": [
+    "mcp",
+    "ollama",
+    "llama.cpp",
+    "llama-server",
+    "local-models",
+    "llm",
+    "embeddings",
+    "gguf",
+    "neuralbridge"
+  ],
+  "type": "module",
+  "bin": {
+    "nb-local-models-mcp": "dist/src/index.js"
+  },
+  "files": [
+    "dist/src",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test \"dist/test/*.test.js\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "typescript": "7.0.2"
+  }
+}
